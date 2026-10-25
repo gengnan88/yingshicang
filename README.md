@@ -1,93 +1,192 @@
-# yingshi
+# 影视仓 Web 版
 
+影视仓的浏览器版本——无需安装，Node 服务端代理 + hls.js 播放，局域网内手机 / 电脑浏览器直接访问。
 
+## 快速开始
 
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
+```bash
+cd YingshiCangWeb
+node server.js          # 默认端口 8080，也可 PORT=9000 node server.js
 ```
-cd existing_repo
-git remote add origin https://jihulab.com/blank9231043/yingshi.git
+
+启动后浏览器访问：
+
+- 本机：<http://localhost:8080>
+- 局域网：`http://<电脑IP>:8080`（启动时终端会打印可访问地址，手机连同一 Wi-Fi 即可打开）
+
+要求 Node.js ≥ 16，**零第三方依赖**（无需 npm install）。
+
+## 功能
+
+| 模块 | 说明 |
+| --- | --- |
+| 首页 | Banner 轮播 + 分类筛选 + 海报网格，滚动加载；**默认展示豆瓣榜单**（热播电影/剧集/Top250/综艺/新片），可切换为任意仓的首页数据 |
+| 点播 | 多源苹果CMS 内容，播放页支持选集 / 换源 / 倍速 / 收藏 |
+| 直播 | 内置直播源 + 自定义 m3u/txt 地址，千+ 频道（实测游魂 1224），多线路失败自动切换 |
+| 搜索 | 跨源并发搜索，片名归一化匹配（去清晰度标记/年份等干扰） |
+| 收藏 / 历史 | localStorage 持久化，历史支持断点续播 |
+| 自动连播 | 当前集播放完自动播放下一集 |
+| 数据备份 | 导出/导入 JSON（源、收藏、历史），支持合并或覆盖 |
+| 外部播放 | 复制播放地址，可粘贴到 PotPlayer / VLC / mpv 打开网络流 |
+
+## 首页数据源：豆瓣榜单（默认）
+
+首次打开即是豆瓣榜单，点击卡片时自动按片名在当前仓各源并发搜索、归一化匹配后直接播放（多源命中会弹层选择）。顶栏「豆瓣 · xxx」chip 可随时切换：
+
+- **豆瓣榜单**：热播电影 / 热播剧集 / 豆瓣Top250 / 热播综艺 / 新片速递（数据源 `m.douban.com` rexxar 接口）
+- **站点列表**：当前数据源解析出的任意站点，用该仓自己的首页数据
+
+豆瓣榜单与数据源完全解耦——即使所有仓都加载失败，首页仍正常显示。
+
+## 推荐源
+
+「我的」页内置三类社区常用地址（点击即用）：
+
+| 分类 | 数量 | 说明 |
+| --- | --- | --- |
+| 单仓 | 33 | 饭太硬 / 肥猫 / 毒盒 / 摸鱼儿 / OK影视 / 王小二 / 动漫城 / 俊佬 / 巧记 / 道长 / T4 / 南风 / 菜妮丝 / HG / dxawi / 小米 / 小盒子 / 潇洒 / 香雅情 / 小苹果 / 宝盒VIP / 欧歌 / 哪吒 / 真心 / 喵影视 / 驸马 / 高天流云 / 青龙 / 分享 / 短剧 等 |
+| 多仓 | 8 | 游魂 / 潇洒 / 小盒子 / 多多影音 / 七星宝盒 / 拾光 等，添加后**自动展开全部子仓** |
+| 直播源 | 17 | 游魂 / IPTV / 潇洒AI / myIPTV / BurningC4 / 范明明 / YueChan 等，点「使用」直接加载 |
+
+支持中文域名（如 `www.饭太硬.com`、`www.游魂.com`，服务端自动转 punycode）。源可达性取决于本地网络，部分域名（Cloudflare 系）可能需要代理。
+
+## 本地聚合源（v1.4 默认源）
+
+对全部源（内置 + 33 单仓 + 8 多仓展开 + 120 个直播源）在**路由器网络实测**后，提取出的最优可用数据重新搭建的**同源本地配置** `public/local.json`——浏览器直接从本服务加载，**不依赖任何外部配置地址，永不因源站失效而打不开**：
+
+| 项 | 数据 |
+| --- | --- |
+| 探测范围 | 109 个源配置 → 45 个去重站点 + 120 个直播源 |
+| 收录站点 | **12 个**（列表非空 + 播放地址可抽取，实测全部可达） |
+| 收录直播 | 游魂直播（实测 1224 频道可加载） |
+| 搜索覆盖 | 12 站点并发搜索，实测「庆余年」命中 6 站 42 条 |
+
+收录的 12 个站点：暴风资源、量子资源、烂大街资源、虎牙采集、魔都影视、建安影视、量子资源(http)、量子影视(lzm3u8)、光速资源、茅台影视、新浪资源、光速资源(http)。
+
+- **生成方式**：`node tools/probe-sources.js`（三阶段：拉配置 → 逐站点测分类/列表/搜索/详情播放 → 直播源测频道数），结果同时产出探测报告
+- **完整报告**：`docs/源探测报告-2026-10-25.md`（含 33 个不可用站点原因、40 个不可达源配置清单、直播源 Top10）
+- **复测方法**：换网络环境后重跑 `node tools/probe-sources.js`，把 `/tmp/local_candidate.json` 中 `available: true` 的站点同步进 `public/local.json` 即可
+- 本地聚合源与推荐源/自定义源**互不排斥**：「我的」页仍可添加其它仓，切换逻辑一致（失败自动回滚）
+
+## 数据源切换：失败自动回滚（v1.3）
+
+切换数据源时如果目标源不可达（DNS 污染 / 超时 / 配置失效），应用会**整体回滚到上一个可用源**，不会出现「顶栏显示新源、搜索用的还是旧数据」的错乱状态：
+
+- 顶栏源名、「我的」页的「当前」标记、搜索/换源数据始终一致
+- 弹窗提示明确原因，如 `数据源「饭太硬」加载失败：配置获取失败（请求超时），已停留在「量子资源」`
+- **启动时**如果记住的数据源已失效，会自动依次尝试其它源，直到落到一个可用源上
+- 多仓展开时子仓全部不可用，同样回滚到原源并提示
+- `/api/fetchText` 对非 200 响应（如 HTTP 451 地区限制、404）会给出带状态码的明确错误，不再笼统报「不是有效的 TVBox 配置」
+
+播放页「换源」搜索的是**当前仓内的其它站点**；单站点仓（如 provide/vod 直连续）没有可换的源，会提示切换到多站点仓。
+
+## 兼容性边界
+
+| 配置类型 | 支持情况 |
+| --- | --- |
+| 苹果CMS type=1 站点 | 完整支持（列表/搜索/详情/播放） |
+| 单仓 JSON（TVBox/影视仓/FongMi） | 支持，含 `//` 注释与尾逗号容错 |
+| 多仓（FongMi `urls` JSON / DC.txt / 行格式 TXT） | 支持，自动展开子仓 |
+| 直播 txt（`#genre#`）/ m3u | 支持 |
+| **加密配置**（如南风 XC.json 已改为密文） | 不支持，给出明确错误提示 |
+| jar / spider（type=3/0）站点 | 网页版无法运行 Java 爬虫，自动跳过并提示数量 |
+
+## 流量架构：视频直连，数据走代理
+
+播放链路分两类，**视频流量 100% 不经过本服务**：
+
+| 流量类型 | 路径 | 单次开销 |
+| --- | --- | --- |
+| 列表 / 详情 JSON | 浏览器 → 本服务 → 采集站 | 3KB ~ 400KB |
+| 海报图 / 缩略图 | 浏览器 → 本服务 → 图片 CDN | 10KB ~ 100KB |
+| **m3u8 / ts 视频流** | **浏览器 ⇢ 视频 CDN（302 直连）** | **0 字节** |
+
+`/api/stream` 只返回一个 **302 重定向**指向真实视频地址，浏览器随后直接与视频 CDN 通信。这意味着：
+
+- 部署在路由器 / NAS 等家用设备上时，**外网访问不产生持续上传流量**，不会被运营商误判为 PCDN 而封宽带
+- 服务端内存 / CPU 占用与播放码率彻底解耦，百兆宽带的小设备也能带 1080p
+- hls.js 自动解析 m3u8 内部的相对地址为绝对地址；视频 CDN 均带 `Access-Control-Allow-Origin: *`，浏览器可直接 fetch
+
+> 若个别视频源不带 CORS 头导致浏览器拉取失败，播放会自动回退走 `/api/stream`（此时才有代理流量）；主流源（量子 / 非凡 / 索尼等 CDN）均支持直连。
+
+## 与 PC 版的关系
+
+- 共用同一套解析内核（`core/` 目录的 sites / cms / live / store 与 PC 版完全一致，Web 版新增 `core/douban.js`）
+- PC 版用 Electron 主进程做网络代理与外部播放器唤起；Web 版用自建 Node 服务（`server.js`）完成同样的代理工作——但**视频流改为 302 直连**（见上一节）
+- 数据互不通用但备份文件格式一致，PC 版导出的 JSON 可直接导入 Web 版
+
+## 服务端接口
+
+| 接口 | 用途 |
+| --- | --- |
+| `/api/fetch?url=&ua=&ref=` | 通用 GET 代理（透传状态码与内容类型，ref 带 Referer） |
+| `/api/fetchText?url=` | 文本代理，自动 UTF-8 / GBK 解码 |
+| `/api/image?url=` | 图片代理（带 Referer，规避防盗链） |
+| `/api/stream?url=` | **302 重定向**到真实视频地址——视频流量由浏览器直连 CDN，不经过本服务 |
+
+## 路由器部署（OpenWrt / 京东云等）
+
+```sh
+PORT=8090 sh start.sh     # start.sh 内指定 node 运行时路径与内存上限
+```
+
+- 端口 8080 常被路由器其他服务占用，建议用 8090 等端口
+- 无公网 Node 的环境可移植 Alpine armhf 版 node（musl ABI），需把 `ld-musl-armhf.so.1` 链接到 `/lib/`
+- 视频 302 直连对路由器零上传压力，剩余流量仅为 JSON 与海报图（KB 级）
+
+### 推荐源在路由器网络的可达性（实测）
+
+| 状态 | 源 |
+| --- | --- |
+| 可达 | 量子 / 光速 / 索尼 / 非凡（内置）、动漫城、俊佬、HG、dxawi、xhztv（4K/多仓）、小盒子多仓、拾光多仓、DC.txt、游魂（302，代理可跟随） |
+| 不可达 | 饭太硬、肥猫、fty、毒盒、摸鱼儿、ok321、王二小、巧记、gitmirror、南风（GitHub raw）、菜妮丝、XYQTVBox、YGBH、欧歌、哪吒、meowtv、高天流云、maoystv、七星宝盒、gitee T4/青龙（451/423）等 |
+
+不可达多因 DNS 污染或境外 CDN 阻断，与程序无关；换用可达源即可。**部分源（如索尼/光速）列表接口正常但搜索接口被 Cloudflare 拦截**，表现为能浏览不能搜——属上游限制。
+
+## 部署到 Render（免费档，推荐公网部署）
+
+项目对 Render 完全兼容：Node 运行时、`PORT` 环境变量、监听所有接口、零第三方依赖，**代码无需任何改动**。
+
+### 1. 推到 GitHub
+
+```bash
+cd YingshiCangWeb
+git init && git add -A && git commit -m "yingshicang web"
 git branch -M main
-git push -uf origin main
+git remote add origin https://github.com/<你的用户名>/<仓库名>.git
+git push -u origin main
 ```
 
-## Integrate with your tools
+（没有 GitHub 账号就注册一个；仓库设为 Public 或 Private 均可，Render 都能拉取。）
 
-* [Set up project integrations](https://jihulab.com/blank9231043/yingshi/-/settings/integrations)
+### 2. Render 控制台配置
 
-## Collaborate with your team
+注册 <https://render.com>（用 GitHub 账号直接登录）→ **New + → Web Service** → 选择刚推送的仓库，按下表填写：
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+| 配置项 | 值 |
+| --- | --- |
+| Name | `yingshicang-web`（决定域名 `xxx.onrender.com`） |
+| Region | **Singapore**（对国内延迟最低） |
+| Branch | `main` |
+| Runtime | `Node` |
+| Build Command | `npm install`（零依赖，秒过） |
+| Start Command | `npm start` |
+| Instance Type | **Free** |
 
-## Test and Deploy
+点 **Create Web Service**，等 1~2 分钟构建完成后访问 `https://<name>.onrender.com` 即可。
 
-Use the built-in continuous integration in GitLab.
+### 3. 免费档的两个特性与对策
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+- **休眠/冷启动**：免费实例 15 分钟无请求会休眠，之后首次打开要等 30~60 秒唤醒。需要常驻在线就注册 [UptimeRobot](https://uptimerobot.com)（免费）加一个 HTTP 监控，间隔 10 分钟 ping 首页即可保活
+- **额度**：免费档含每月数百 GB 出站带宽与 512MB 内存——本项目服务器只过 JSON 和海报（KB 级），**视频流 302 直连不占额度**，12 站点并发搜索也吃得消
 
-***
+### 4. 后续更新
 
-# Editing this README
+以后所有改动只需 `git push`，Render 自动重新构建部署。绑定自己的域名在 Settings → Custom Domains 添加，自动签 HTTPS 证书。
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+> 若追求更低延迟，可改走 Cloudflare Workers + Pages：把 `server.js` 的 4 个 `/api/*` 接口搬进 worker 的 fetch handler，静态文件传 Pages，全球边缘节点响应——需要约百行 JS 改写，乐意的话我可以直接给出一版 worker 代码。
 
-## Suggestions for a good README
+## 说明
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+- 数据来自第三方公开接口，仅供学习测试，请遵守当地法律法规。
+- 播放失败时优先检查网络；直播可尝试切换线路（多线路源），点播可尝试「换源」。

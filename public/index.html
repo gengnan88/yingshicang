@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>影视仓 Web</title>
+<link rel="icon" href="assets/icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <!-- 侧边导航 -->
+  <aside id="sidebar">
+    <div class="logo">
+      <span class="logo-icon">▶</span>
+      <span class="logo-text">影视仓</span>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" data-tab="home"><span class="nav-ico">🏠</span><span class="nav-label">首页</span></div>
+      <div class="nav-item" data-tab="live"><span class="nav-ico">📺</span><span class="nav-label">直播</span></div>
+      <div class="nav-item" data-tab="search"><span class="nav-ico">🔍</span><span class="nav-label">搜索</span></div>
+      <div class="nav-item" data-tab="fav"><span class="nav-ico">♥</span><span class="nav-label">收藏</span></div>
+      <div class="nav-item" data-tab="mine"><span class="nav-ico">👤</span><span class="nav-label">我的</span></div>
+    </nav>
+    <div class="sidebar-foot">v1.1.0 Web</div>
+  </aside>
+
+  <!-- 主区域 -->
+  <main id="main">
+    <header id="topbar">
+      <div id="source-chip" class="source-chip" title="点击切换数据源">
+        <span class="src-dot"></span><span id="source-name">加载中…</span>
+      </div>
+      <div id="home-chip" class="source-chip home-chip" title="点击切换首页数据源（豆瓣榜单 / 站点列表）">
+        <span class="src-dot home-dot"></span><span id="home-name">豆瓣</span>
+      </div>
+      <div id="topbar-status" class="topbar-status"></div>
+    </header>
+
+    <!-- 首页 -->
+    <section id="tab-home" class="tab active">
+      <div id="banner" class="banner">
+        <div class="banner-track" id="banner-track"></div>
+        <div class="banner-dots" id="banner-dots"></div>
+      </div>
+      <div class="chips" id="home-chips"></div>
+      <div class="grid" id="home-grid"></div>
+      <div class="list-loading" id="home-loading" style="display:none">加载中…</div>
+      <div class="list-end" id="home-end" style="display:none">— 没有更多了 —</div>
+    </section>
+
+    <!-- 直播 -->
+    <section id="tab-live" class="tab">
+      <div class="live-bar">
+        <input id="live-url-input" type="text" placeholder="直播源地址（m3u/txt，留空则用当前数据源自带的直播配置）" autocomplete="off">
+        <button id="live-load-btn">加载</button>
+      </div>
+      <div class="live-search">
+        <input id="live-search-input" type="text" placeholder="搜索频道…" autocomplete="off">
+      </div>
+      <div class="chips" id="live-group-chips"></div>
+      <div class="live-grid" id="live-grid"></div>
+      <div class="list-loading" id="live-loading" style="display:none">加载直播源…</div>
+      <div class="list-empty" id="live-empty" style="display:none">暂无频道</div>
+    </section>
+
+    <!-- 搜索 -->
+    <section id="tab-search" class="tab">
+      <div class="search-bar">
+        <input id="search-input" type="text" placeholder="搜索影视名称…" autocomplete="off">
+        <button id="search-btn">搜索</button>
+      </div>
+      <div class="chips" id="search-source-chips"></div>
+      <div class="grid" id="search-grid"></div>
+      <div class="list-loading" id="search-loading" style="display:none">搜索中…</div>
+      <div class="list-empty" id="search-empty" style="display:none">未找到相关影片</div>
+    </section>
+
+    <!-- 收藏 -->
+    <section id="tab-fav" class="tab">
+      <div class="grid" id="fav-grid"></div>
+      <div class="list-empty" id="fav-empty" style="display:none">还没有收藏，去首页看看 →</div>
+    </section>
+
+    <!-- 我的 -->
+    <section id="tab-mine" class="tab">
+      <div class="panel">
+        <h3>数据源管理</h3>
+        <div id="source-list" class="source-list"></div>
+        <div class="add-source">
+          <input id="new-source-name" type="text" placeholder="源名称（可选）">
+          <input id="new-source-url" type="text" placeholder="TVBox / 影视仓 配置地址，如 http://www.影视仓.com">
+          <button id="add-source-btn">添加</button>
+        </div>
+        <div class="hint">支持 TVBox JSON 配置（自动解析其中苹果CMS type=1 站点）；也可直接填苹果CMS 接口地址。</div>
+      </div>
+      <div class="panel">
+        <h3>推荐源</h3>
+        <div id="recommend-list" class="recommend-list"></div>
+        <div class="hint">社区常用地址整理。单仓 / 多仓添加后请到上方「数据源管理」点击「使用」；直播源点「使用」直接加载。源可达性取决于本地网络（部分域名可能需要代理）。</div>
+      </div>
+      <div class="panel">
+        <h3>数据备份</h3>
+        <div class="backup-bar">
+          <button id="export-btn" class="backup-btn">导出备份</button>
+          <button id="import-btn" class="backup-btn">导入备份</button>
+          <input id="import-file" type="file" accept=".json,application/json" style="display:none">
+        </div>
+        <div class="hint">导出内容：数据源、收藏、观看历史（含续播进度）。导入时可选择合并或覆盖。换设备/重装前建议先导出。</div>
+      </div>
+      <div class="panel">
+        <h3>观看历史</h3>
+        <div id="history-list" class="history-list"></div>
+        <div class="list-empty" id="history-empty" style="display:none">暂无观看记录</div>
+      </div>
+      <div class="panel about">
+        <h3>关于</h3>
+        <p>影视仓 Web 版 · 浏览器直接访问（Node 代理 + hls.js）</p>
+        <p>局域网内启动服务后，手机 / 电脑浏览器均可访问；数据来自第三方公开接口，仅供学习测试，请遵守当地法律法规。</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- 播放页 -->
+<div id="player-page" class="player-page" style="display:none">
+  <div class="player-wrap">
+    <video id="video" controls autoplay playsinline></video>
+    <button id="player-back" class="player-back">← 返回</button>
+  </div>
+  <div class="player-info">
+    <div class="player-head">
+      <div>
+        <h2 id="p-title">—</h2>
+        <div id="p-meta" class="p-meta"></div>
+      </div>
+      <div class="player-actions">
+        <button id="p-source-btn" class="p-btn">换源</button>
+        <button id="p-ext-btn" class="p-btn" title="复制播放地址到本地播放器">⧉ 外部播放</button>
+        <button id="p-speed-btn" class="p-btn">倍速 1.0x</button>
+        <button id="p-fav-btn" class="p-btn">♡ 收藏</button>
+      </div>
+    </div>
+    <div id="p-desc" class="p-desc"></div>
+    <div class="p-current-source" id="p-current-source"></div>
+    <div class="chips" id="p-groups"></div>
+    <div class="chips" id="p-live-lines" style="display:none"></div>
+    <div class="ep-grid" id="p-eps"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast" style="display:none"></div>
+
+<script src="vendor/hls.min.js"></script>
+<script src="core/sites.js"></script>
+<script src="core/cms.js"></script>
+<script src="core/douban.js"></script>
+<script src="core/live.js"></script>
+<script src="core/store.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
